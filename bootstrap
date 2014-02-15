@@ -1,4 +1,5 @@
 #/bin/bash
 
 virtualenv environ
-pip --environment=environ -r requirements.pip
+. environ/bin/activate
+pip install -r requirements.pip
