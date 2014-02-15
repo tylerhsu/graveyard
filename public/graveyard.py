@@ -7,6 +7,7 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def show_form():
+    raise Exception()
     locations = sorted([ node for node in graph.build_graph(0)._nodes.keys()])
     return render_template('form.html', locations=locations)
 
@@ -41,4 +42,10 @@ def get_bonuses(data):
     return bonuses
 
 if __name__ == '__main__':
+    if not app.debug:
+        import logging
+        from logging import FileHandler
+        handler = FileHandler('../log/app.log')
+        handler.setLevel(logging.WARN)
+        app.logger.addHandler(handler)
     app.run(host='0.0.0.0')
