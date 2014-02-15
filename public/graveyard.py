@@ -7,7 +7,6 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def show_form():
-    raise Exception()
     locations = sorted([ node for node in graph.build_graph(0)._nodes.keys()])
     return render_template('form.html', locations=locations)
 
