@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static/css/bootstrap3.1.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script type="text/javascript" src="http://form-serialize.googlecode.com/svn/trunk/serialize-0.2.min.js"></script>
+    <script type="text/javascript" src="/static/js/mustache.js"></script>
+    <script type="text/javascript" src="/static/js/main.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <form action="/route/", method="POST" role="form">
+        <div class="row">
+          <div class="col-xs-2">
+            <label class="control-label">Estimated average mph</label><input type="text" name="speed" class="form-control">
+          </div>
+        </div>
+        <table class="table table-striped">
+          <thead>
+            <th>Location</th>
+            <th>Start?</th>
+            <th>Waypoint?</th>
+            <th>Bonus</th>
+          </thead>
+          <tbody>
+            {% for location in locations %}
+            <tr>
+              <td>{{ location }}</td>
+              <td><input type="radio" name="start_node_id" value="{{ location }}" class="form-control"></td>
+              <td><input type="checkbox" name="target_node_ids" value="{{ location }}" class="form-control"></td>
+              <td><input type="text" name="bonus|{{ location }}" class="form-control" style="width:50px"></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="row">
+          <div class="col-xs-12">
+            <button type="button" class="btn btn-primary btn-lg btn-block" id="submit-form">Submit</button>
+          </div>
+        </div>
+      </form>
+      <img src="/static/images/spinner.gif" style="display:none" id="spinner">
+      <div id="results-container">
+      </div>
+    </div>
+  </body>
+</html>

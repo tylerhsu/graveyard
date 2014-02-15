@@ -1,14 +1,15 @@
+import csv
 from decimal import Decimal
 
 def main():
     # inputs
     start = 'a'
-    targets = ['f', 'e', 'g']
-    bonuses = {
-        'e': -1,
-    }
+    targets = ['Callahan Cemetery', 'Elkinsville Cemetery', 'Cornett Cemetery']
     speed = 1
-    return run(start, targets, bonuses, speed)
+    graph = build_graph(speed, targets)
+    for node in graph._nodes.values():
+        print '%s: %s' % (node, node._neighbors)
+    # return run(start, targets, bonuses, speed)
 
 def run(start_id, target_ids, bonuses, speed):
     graph = build_graph(speed, target_ids)
@@ -62,26 +63,14 @@ def permutations(sequence):
     return perms
 
 def build_graph(speed, targets=[]):
-    graph = Graph([
-            Node('a'),
-            Node('b'),
-            Node('c'),
-            Node('d'),
-            Node('e'),
-            Node('f'),
-            Node('g'),
-    ], speed)
-
-    graph.connect('a', 'b', distance=5)
-    graph.connect('a', 'c', distance=4)
-    graph.connect('b', 'e', distance=3)
-    graph.connect('c', 'e', distance=3)
-    graph.connect('c', 'd', distance=3)
-    graph.connect('e', 'd', distance=3)
-    graph.connect('e', 'f', distance=8)
-    graph.connect('d', 'g', distance=2)
-    graph.connect('g', 'f', distance=4)
-    graph.connect('b', 'f', distance=7)
+    with open('graph_data.csv', 'rb') as f:
+        reader = csv.DictReader(f)
+        locations = reader.fieldnames[1:]
+        graph = Graph([ Node(location) for location in locations ], speed)
+        for row in reader:
+            for key, value in row.items():
+                if value and key != 'name':
+                    graph.connect(row['name'], key, distance=value)
 
     for target_id in targets:
         graph.get(target_id).is_target = True
@@ -141,7 +130,7 @@ class Graph(object):
             distance = node._neighbors[neighbor]
         except KeyError:
             raise Exception("Not neighbors")
-        return Decimal(distance) / Decimal(self.speed) + neighbor.bonus
+        return Decimal(distance) / Decimal(self.speed) + Decimal(neighbor.bonus)
 
     def total_cost(self, route):
         if len(route) < 2:
