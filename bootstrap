@@ -1,0 +1,4 @@
+#/bin/bash
+
+virtualenv environ
+pip --environment=environ -r requirements.pip
