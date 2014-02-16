@@ -11,11 +11,11 @@
             resultsHandler(request);
         }
 
+        request.open('POST', '/route/', true);
+        request.send(data);
+
+        document.querySelector("#results-container").innerHTML = "";
         showSpinner();
-        setTimeout(function() {
-            request.open('POST', '/route/', true);
-            request.send(data);
-        }, 1000);
     }
 
     function resultsHandler(request) {

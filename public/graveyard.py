@@ -1,14 +1,14 @@
-
 from flask import Flask, request, render_template, redirect, jsonify, abort
 from werkzeug.datastructures import ImmutableMultiDict
 import graph
 import urlparse
 
 app = Flask(__name__)
+app.config.from_object('settings')
 if not app.debug:
     import logging
     from logging import FileHandler
-    handler = FileHandler('/var/www/graveyard/log/app.log')
+    handler = FileHandler(app.config['APP_ROOT'] + '/log/app.log')
     handler.setLevel(logging.DEBUG)
     app.logger.addHandler(handler)
 
@@ -23,16 +23,13 @@ def route():
     errors = validate(data)
     if errors['errors']:
         return jsonify(errors), 400
-    start_node_id = data.get('start_node_id')
     target_node_ids = data.getlist('target_node_ids')
     speed = data.get('speed')
     bonuses = get_bonuses(data)
-    return jsonify(graph.run(start_node_id, target_node_ids, bonuses, speed))
+    return jsonify(graph.run(target_node_ids, bonuses, speed))
 
 def validate(data):
     errors = { 'errors': [] }
-    if data.get('start_node_id') is None:
-        errors['errors'].append('Select a start location')
     if data.get('target_node_ids') is None:
         errors['errors'].append('Select at least one waypoint')
     if data.get('speed') is None:
@@ -48,4 +45,4 @@ def get_bonuses(data):
     return bonuses
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+    app.run(host='0.0.0.0')

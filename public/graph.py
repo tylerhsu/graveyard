@@ -11,7 +11,7 @@ def main():
         print '%s: %s' % (node, node._neighbors)
     # return run(start, targets, bonuses, speed)
 
-def run(start_id, target_ids, bonuses, speed):
+def run(target_ids, bonuses, speed, start_id='Start Finish'):
     graph = build_graph(speed, target_ids)
     results = find_routes(graph, start_id, target_ids, bonuses)
     return serialize(results)
@@ -63,7 +63,8 @@ def permutations(sequence):
     return perms
 
 def build_graph(speed, targets=[]):
-    with open('/var/www/graveyard/public/graph_data.csv', 'rb') as f:
+    import settings
+    with open(settings.APP_ROOT + '/public/graph_data.csv', 'rb') as f:
         reader = csv.DictReader(f)
         locations = reader.fieldnames[1:]
         graph = Graph([ Node(location) for location in locations ], speed)

@@ -27,7 +27,6 @@
             {% for location in locations %}
             <tr>
               <td>{{ location }}</td>
-              <td><input type="radio" name="start_node_id" value="{{ location }}" class="form-control"></td>
               <td><input type="checkbox" name="target_node_ids" value="{{ location }}" class="form-control"></td>
               <td><input type="text" name="bonus|{{ location }}" class="form-control" style="width:50px"></td>
             </tr>
