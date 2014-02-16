@@ -1,4 +1,5 @@
 import csv, settings
+from copy import deepcopy
 from decimal import Decimal
 
 DATA_FILE = settings.APP_ROOT + '/public/graph_data.csv'
@@ -13,10 +14,9 @@ def main():
 
 def run(target_ids, bonuses, speed, start_id='Start Finish'):
     graph = build_graph(start_id, target_ids, speed, bonuses)
-    graph_without_bonuses = build_graph(start_id, target_ids, speed)
 
     results = find_routes(graph)
-    most_direct = find_routes(graph_without_bonuses)[0]
+    most_direct = find_routes(graph, ignore_bonuses=True)[0]
     return {
         'routes': [serialize(r) for r in results],
         'most_direct': serialize(most_direct),
@@ -28,13 +28,23 @@ def serialize(result):
     cost_without_bonuses = result['cost_without_bonuses']
     distance = result['distance']
     return {
-        'nodes': [node.serialize() for node in route],
+        'nodes': [node.serialize() for node in traverse(route)],
         'cost': str(round(cost, 2)),
         'cost_without_bonuses': str(round(cost_without_bonuses, 2)),
         'distance': str(round(distance, 2)),
     }
 
-def find_routes(graph):
+def traverse(route):
+    route_copy = []
+    for node in route:
+        node_copy = deepcopy(node)
+        if node.id in [n.id for n in route_copy]:
+            node_copy.bonus = 0
+        route_copy.append(node_copy)
+    return route_copy
+            
+
+def find_routes(graph, ignore_bonuses=False):
     start = graph.start.id
     targets = [node.id for node in graph.targets()]
     choices = []
@@ -43,7 +53,7 @@ def find_routes(graph):
         route = [graph.get(start)]
         cost = 0
         for n in range(len(waypoints)-1):
-            leg, leg_cost = graph.route(waypoints[n], waypoints[n+1], ignore_bonuses_of=route)
+            leg, leg_cost = graph.route(waypoints[n], waypoints[n+1], ignore_bonuses_of=route, ignore_all_bonuses=ignore_bonuses)
             route += leg[1:]
             cost += leg_cost
         choices.append({
@@ -114,7 +124,7 @@ class Graph(object):
         if bidirectional:
             dest.connect(source, distance)
 
-    def route(self, start_id, dest_id, ignore_bonuses_of=[]):
+    def route(self, start_id, dest_id, ignore_bonuses_of=[], ignore_all_bonuses=False):
         def backtrack(node):
             if came_from.get(node) is None:
                 return [node]
@@ -132,7 +142,7 @@ class Graph(object):
             explored.append(node)
             for neighbor in node.neighbors():
                 if not neighbor in explored:
-                    use_bonus = neighbor not in ignore_bonuses_of
+                    use_bonus = neighbor not in ignore_bonuses_of and not ignore_all_bonuses
                     new_cost = cost + self.cost(node, neighbor, use_bonus=use_bonus)
                     if not frontier.contains(neighbor):
                         frontier.put(neighbor, new_cost)
