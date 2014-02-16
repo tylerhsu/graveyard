@@ -14,7 +14,7 @@ if not app.debug:
 
 @app.route('/', methods=['GET'])
 def show_form():
-    locations = sorted([ node for node in graph.build_graph(0)._nodes.keys()])
+    locations = sorted(graph.get_locations())
     return render_template('form.html', locations=locations)
 
 @app.route('/route/', methods=['POST'])

@@ -12,8 +12,8 @@
     <div class="container">
       <form action="/route/", method="POST" role="form">
         <div class="row">
-          <div class="col-xs-3">
-            <label class="control-label">Estimated average mph</label><input type="text" name="speed" class="form-control">
+          <div class="col-xs-12">
+            <label class="control-label">Estimated average mph</label><input type="text" name="speed" value="15" class="form-control" style="width:4em">
           </div>
         </div>
         <table class="table table-striped">
@@ -27,20 +27,19 @@
             <tr>
               <td>{{ location }}</td>
               <td><input type="checkbox" name="target_node_ids" value="{{ location }}" class="form-control"></td>
-              <td><input type="text" name="bonus|{{ location }}" class="form-control" style="width:50px"></td>
+              <td><input type="text" name="bonus|{{ location }}" class="form-control" style="width:4em"></td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
-        <div class="row">
-          <div class="col-xs-12">
-            <button type="button" class="btn btn-primary btn-lg btn-block" id="submit-form">Submit</button>
-          </div>
-        </div>
       </form>
       <img src="/static/images/spinner.gif" style="display:none" id="spinner">
-      <div id="results-container">
+      <div class="row">
+        <div class="col-xs-12">
+          <button type="button" class="btn btn-primary btn-lg btn-block" id="submit-form">Submit</button>
+        </div>
       </div>
+      <div id="results-container"></div>
     </div>
   </body>
 </html>

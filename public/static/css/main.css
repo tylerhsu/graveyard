@@ -1,8 +1,36 @@
+#results-container {
+    margin-top: 20px;
+}
+
 .results-node-target {
     font-weight: bold;
 }
 
+.results-node-bonus {
+    color: #009900;
+}
+
 .results-route {
     margin-top: 5px;
-    margin-bottom: 5px;
+    padding: 5px;
+    background-color: #dff0d8;
+}
+
+.results-tabs {
+    margin-left: 35px;
+}
+
+.results-tab {
+    margin-left: 5px;
+    margin-right: 5px;
+    padding: 8px;
+    font-size: 12pt;
+}
+
+.results-tab-selected {
+    background-color: #dff0d8;
+}
+
+.results-tab-unselected {
+    cursor: pointer;
 }

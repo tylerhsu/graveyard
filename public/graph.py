@@ -1,56 +1,59 @@
-import csv
+import csv, settings
 from decimal import Decimal
 
+DATA_FILE = settings.APP_ROOT + '/public/graph_data.csv'
+
 def main():
-    # inputs
-    start = 'a'
-    targets = ['Callahan Cemetery', 'Elkinsville Cemetery', 'Cornett Cemetery']
-    speed = 1
-    graph = build_graph(speed, targets)
-    for node in graph._nodes.values():
-        print '%s: %s' % (node, node._neighbors)
-    # return run(start, targets, bonuses, speed)
+    targets = ['Hawkins Cemetery']
+    speed = 10
+    bonuses = {
+        'Gil Gal Cemetery': 60,
+    }
+    return run(targets, bonuses, speed)
 
 def run(target_ids, bonuses, speed, start_id='Start Finish'):
-    graph = build_graph(speed, target_ids)
-    results = find_routes(graph, start_id, target_ids, bonuses)
-    return serialize(results)
+    graph = build_graph(start_id, target_ids, speed, bonuses)
+    graph_without_bonuses = build_graph(start_id, target_ids, speed)
 
-def serialize(results):
-    obj = {
-        'routes': [],
+    results = find_routes(graph)
+    most_direct = find_routes(graph_without_bonuses)[0]
+    return {
+        'routes': [serialize(r) for r in results],
+        'most_direct': serialize(most_direct),
     }
-    for route, cost in results:
-        obj['routes'].append({
-                'nodes': [node.serialize() for node in route],
-                'cost': float(cost),
-        })
-    return obj
 
-def find_routes(graph, start, targets, bonuses):
+def serialize(result):
+    route = result['route']
+    cost = result['cost']
+    cost_without_bonuses = result['cost_without_bonuses']
+    distance = result['distance']
+    return {
+        'nodes': [node.serialize() for node in route],
+        'cost': str(round(cost, 2)),
+        'cost_without_bonuses': str(round(cost_without_bonuses, 2)),
+        'distance': str(round(distance, 2)),
+    }
+
+def find_routes(graph):
+    start = graph.start.id
+    targets = [node.id for node in graph.targets()]
     choices = []
     for permutation in permutations(targets):
-        graph.set_bonuses(bonuses)
         waypoints = [start] + permutation + [start]
         route = [graph.get(start)]
         cost = 0
         for n in range(len(waypoints)-1):
-            leg = graph.route(waypoints[n], waypoints[n+1])
+            leg, leg_cost = graph.route(waypoints[n], waypoints[n+1], ignore_bonuses_of=route)
             route += leg[1:]
-            cost += graph.total_cost(leg)
+            cost += leg_cost
+        choices.append({
+            'route': route,
+            'cost': cost,
+            'cost_without_bonuses': graph.total_cost(route, use_bonus=False),
+            'distance': graph.total_distance(route),
+        })
 
-            # bonuses for visited nodes are now used up
-            for node in leg:
-                node.bonus = 0
-        choices.append((route, cost))
-
-    # restore bonuses to their initial state
-    graph.set_bonuses(bonuses)
-
-    best = sorted(choices, key=lambda c: c[1])[0]
-
-    # Return list of all results whose costs are equal to the best one
-    return [c for c in choices if c[1] == best[1]]
+    return sorted(choices, key=lambda c: c['cost'])
 
 def permutations(sequence):
     if len(sequence) == 1:
@@ -62,9 +65,14 @@ def permutations(sequence):
         perms += [[x] + p for p in permutations(sequence_without_x)]
     return perms
 
-def build_graph(speed, targets=[]):
-    import settings
-    with open(settings.APP_ROOT + '/public/graph_data.csv', 'rb') as f:
+def get_locations():
+    with open(DATA_FILE, 'rb') as f:
+        reader = csv.DictReader(f)
+        locations = reader.fieldnames[1:]
+    return locations
+
+def build_graph(start_id, target_ids, speed, bonuses={}):
+    with open(DATA_FILE, 'rb') as f:
         reader = csv.DictReader(f)
         locations = reader.fieldnames[1:]
         graph = Graph([ Node(location) for location in locations ], speed)
@@ -73,17 +81,24 @@ def build_graph(speed, targets=[]):
                 if value and key != 'name':
                     graph.connect(row['name'], key, distance=value)
 
-    for target_id in targets:
+    graph.start = graph.get(start_id)
+    for target_id in target_ids:
         graph.get(target_id).is_target = True
+
+    graph.set_bonuses(bonuses)
 
     return graph
 
 class Graph(object):
     def __init__(self, nodes, speed):
         self.speed = speed
+        self.start = None
         self._nodes = {}
         for node in nodes:
             self._nodes[node.id] = node
+
+    def targets(self):
+        return [node for node in self._nodes.values() if node.is_target]
 
     def set_bonuses(self, bonuses):
         for node_id, bonus in bonuses.items():
@@ -99,7 +114,7 @@ class Graph(object):
         if bidirectional:
             dest.connect(source, distance)
 
-    def route(self, start_id, dest_id):
+    def route(self, start_id, dest_id, ignore_bonuses_of=[]):
         def backtrack(node):
             if came_from.get(node) is None:
                 return [node]
@@ -113,11 +128,12 @@ class Graph(object):
         while not frontier.empty():
             node, cost = frontier.get()
             if node == dest:
-                return backtrack(dest)
+                return backtrack(dest), cost
             explored.append(node)
             for neighbor in node.neighbors():
                 if not neighbor in explored:
-                    new_cost = cost + self.cost(node, neighbor)
+                    use_bonus = neighbor not in ignore_bonuses_of
+                    new_cost = cost + self.cost(node, neighbor, use_bonus=use_bonus)
                     if not frontier.contains(neighbor):
                         frontier.put(neighbor, new_cost)
                         came_from[neighbor] = node
@@ -126,20 +142,34 @@ class Graph(object):
                         came_from[neighbor] = node
         return None
 
-    def cost(self, node, neighbor):
+    def cost(self, node, neighbor, use_bonus=True):
+        distance = self.distance(node, neighbor)
+        cost = Decimal(distance) / Decimal(self.speed)
+        if use_bonus:
+            cost -= Decimal(neighbor.bonus) / Decimal(60)
+        return cost
+
+    def distance(self, node, neighbor):
         try:
-            distance = node._neighbors[neighbor]
+            return node._neighbors[neighbor]
         except KeyError:
             raise Exception("Not neighbors")
-        return Decimal(distance) / Decimal(self.speed) - (Decimal(neighbor.bonus) / 60)
 
-    def total_cost(self, route):
+    def total_cost(self, route, use_bonus=True):
         if len(route) < 2:
             return 0
         cost = 0
         for n in range(len(route) - 1):
-            cost += self.cost(route[n], route[n+1])
+            cost += self.cost(route[n], route[n+1], use_bonus=use_bonus)
         return cost
+
+    def total_distance(self, route):
+        if len(route) < 2:
+            return 0
+        distance = 0
+        for n in range(len(route) - 1):
+            distance += Decimal(self.distance(route[n], route[n+1]))
+        return distance
 
 class Node(object):
     def __init__(self, id, bonus=0):
@@ -158,8 +188,8 @@ class Node(object):
         return self._neighbors.keys()
 
     def serialize(self):
-        return { "id": self.id,
-                 "bonus": self.bonus,
+        return { "id": str(self.id),
+                 "bonus": str(self.bonus),
                  "is_target": self.is_target,
                  }
 
