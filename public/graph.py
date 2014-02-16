@@ -131,7 +131,7 @@ class Graph(object):
             distance = node._neighbors[neighbor]
         except KeyError:
             raise Exception("Not neighbors")
-        return Decimal(distance) / Decimal(self.speed) + Decimal(neighbor.bonus)
+        return Decimal(distance) / Decimal(self.speed) - (Decimal(neighbor.bonus) / 60)
 
     def total_cost(self, route):
         if len(route) < 2:
