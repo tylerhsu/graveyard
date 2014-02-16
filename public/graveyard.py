@@ -1,9 +1,16 @@
+
 from flask import Flask, request, render_template, redirect, jsonify, abort
 from werkzeug.datastructures import ImmutableMultiDict
 import graph
 import urlparse
 
 app = Flask(__name__)
+if not app.debug:
+    import logging
+    from logging import FileHandler
+    handler = FileHandler('/var/www/graveyard/log/app.log')
+    handler.setLevel(logging.DEBUG)
+    app.logger.addHandler(handler)
 
 @app.route('/', methods=['GET'])
 def show_form():
@@ -41,10 +48,4 @@ def get_bonuses(data):
     return bonuses
 
 if __name__ == '__main__':
-    if not app.debug:
-        import logging
-        from logging import FileHandler
-        handler = FileHandler('../log/app.log')
-        handler.setLevel(logging.WARN)
-        app.logger.addHandler(handler)
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', debug=True)

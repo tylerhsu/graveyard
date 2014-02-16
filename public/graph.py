@@ -63,7 +63,7 @@ def permutations(sequence):
     return perms
 
 def build_graph(speed, targets=[]):
-    with open('graph_data.csv', 'rb') as f:
+    with open('/var/www/graveyard/public/graph_data.csv', 'rb') as f:
         reader = csv.DictReader(f)
         locations = reader.fieldnames[1:]
         graph = Graph([ Node(location) for location in locations ], speed)
